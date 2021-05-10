@@ -13,8 +13,7 @@ def read_00ff(word):
   return word & 0x00ff
 
 def _0NNN(emu, word):
-  # sys addr
-  # Ignored
+  # sys addr, opcode ignored
   pass
 
 def _00E0(emu, word):
@@ -23,41 +22,41 @@ def _00E0(emu, word):
 
 def _00EE(emu, word):
   # ret
-  emu.sp -= 1
-  emu.pc = emu.stack[emu.sp]
+  emu.regs.sp -= 1
+  emu.regs.pc = emu.stack[emu.regs.sp]
 
 def _1NNN(emu, word):
   # jp NNN
   nnn = read_0fff(word)
-  emu.pc = nnn
+  emu.regs.pc = nnn
 
 def _2NNN(emu, word):
   # call NNN
   nnn = read_0fff(word)
-  emu.stack[emu.sp] = emu.pc
-  emu.sp += 1
-  emu.pc = nnn
+  emu.stack[emu.regs.sp] = emu.regs.pc
+  emu.regs.sp += 1
+  emu.regs.pc = nnn
 
 def _3XNN(emu, word):
   # skip if vx == nn
   vx = read_0f00(word)
   nn = read_00ff(word)
-  if emu.regs[vx] == nn:
-    emu.pc += 2
+  if emu.regs[vx]== nn:
+    emu.regs.pc += 2
 
 def _4XNN(emu, word):
   # skip if vx != nn
   vx = read_0f00(word)
   nn = read_00ff(word)
   if emu.regs[vx] != nn:
-    emu.pc += 2
+    emu.regs.pc += 2
 
 def _5XY0(emu, word):
   # skip if vx == vy
   vx = read_0f00(word)
   vy = read_00f0(word)
   if emu.regs[vx] == emu.regs[vy]:
-    emu.pc += 2
+    emu.regs.pc += 2
 
 def _6XNN(emu, word):
   # vx = nn
@@ -99,44 +98,41 @@ def _8XY4(emu, word):
   # vx = vx + vy, vf = CARRY
   vx = read_0f00(word)
   vy = read_00f0(word)
-  res = emu.regs[vx] + emu.regs[vy]
-  carry = 1 if res > 0xff else 0
+  carry = 1 if emu.regs[vx] + emu.regs[vy] > 0xff else 0
   emu.regs[0xf] = carry
-  emu.regs[vx] = res
+  emu.regs[vx] += emu.regs[vy]
 
 def _8XY5(emu, word):
   # vx = vx - vy, vf = NOT BORROW
   vx = read_0f00(word)
   vy = read_00f0(word)
-  res = emu.regs[vx] - emu.regs[vy]
-  borrow = 0 if res > 0 else 1
+  borrow = 1 if emu.regs[vx] < emu.regs[vy] else 0
   emu.regs[0xf] = borrow
-  emu.regs[vx] = res
+  emu.regs[vx] -= emu.regs[vy]
 
 def _8XY6(emu, word):
   # vx = vy >> 1, vf = LSB
   vx = read_0f00(word)
   vy = read_00f0(word)
-  res = emu.regs[vy] >> 1
-  emu.regs[0xf] = emu.regs[vy] & 1
-  emu.regs[vx] = res
+  lsb = emu.regs[vy] & 1
+  emu.regs.set(0xf, lsb)
+  emu.regs[vx] = emu.regs[vy] >> 1
 
 def _8XY7(emu, word):
   # vx = vy - vx, vf = NOT BORROW
   vx = read_0f00(word)
   vy = read_00f0(word)
-  res = emu.regs[vy] - emu.regs[vx]
-  borrow = 0 if res > 0 else 1
+  borrow = 1 if emu.regs[vy] < emu.regs[vx] else 0
   emu.regs[0xf] = borrow
-  emu.regs[vx] = res
+  emu.regs[vx] = emu.regs[vy] - emu.regs[vx]
 
 def _8XYE(emu, word):
   # vx = vy << 1, vf = MSB
   vx = read_0f00(word)
   vy = read_00f0(word)
-  res = emu.regs[vy] << 1
-  emu.regs[0xf] = emu.regs[vy] & 0x8000
-  emu.regs[vx] = res
+  msb = emu.regs.get(vy) & 0x8000
+  emu.regs[0xf] = msb
+  emu.regs[vx] = emu.regs[vy] << 1
 
 def _9XY0(emu, word):
   # skip if vx != vy
@@ -153,7 +149,7 @@ def _ANNN(emu, word):
 def _BNNN(emu, word):
   # jp nnn + v0
   nnn = read_0fff(word)
-  emu.pc = nnn + emu.regs[0x0]
+  emu.regs.pc = nnn + emu.regs[0x0]
 
 def _CXNN(emu, word):
   vx = read_0f00(word)
@@ -176,7 +172,7 @@ def _EXA1(emu, word):
 def _FX07(emu, word):
   # vx = dt
   vx = read_0f00(word)
-  emu.regs[vx] = emu.dt
+  emu.regs[vx] = emu.regs.dt
 
 def _FX0A(emu, word):
   # wait for keypress and store in vx
@@ -185,17 +181,17 @@ def _FX0A(emu, word):
 def _FX15(emu, word):
   # dt = vx
   vx = read_0f00(word)
-  emu.dt = emu.regs[vx]
+  emu.regs.dt = emu.regs[vx]
 
 def _FX18(emu, word):
   # st = vx
   vx = read_0f00(word)
-  emu.st = emu.regs[vx]
+  emu.regs.st = emu.regs[vx]
 
 def _FX1E(emu, word):
   # i = i + vx
   vx = read_0f00(word)
-  emu.i += emu.regs[vx]
+  emu.regs.i += emu.regs[vx]
 
 def _FX29(emu, word):
   # i = sprite location for vx
@@ -204,23 +200,25 @@ def _FX29(emu, word):
 def _FX33(emu, word):
   # i, i+1, i+2 = bcd vx
   vx = read_0f00(word)
-  emu.mem[emu.i] = vx // 100
-  emu.mem[emu.i+1] = vx % 100 // 10
-  emu.mem[emu.i+2] = vx % 10
+  val_vx = emu.regs[vx]
+  val_i = emu.regs.i
+  emu.mem[val_i] = val_vx // 100
+  emu.mem[val_i+1] = val_vx % 100 // 10
+  emu.mem[val_i+2] = val_vx % 10
 
 def _FX55(emu, word):
   # store v0 to vx inclusive starting at i
   vx = read_0f00(word)
   for r in range(vx+1):
-    emu.mem[emu.i] = emu.regs[r]
-    emu.i += 1
+    emu.mem[emu.regs.i] = emu.regs[r]
+    emu.regs.i += 1
 
 def _FX65(emu, word):
   # read v0 to vx inclusive starting at i
   vx = read_0f00(word)
   for r in range(vx+1):
-    emu.regs[r] = emu.mem[emu.i]
-    emu.i += 1
+    emu.regs[r] = emu.mem[emu.regs.i]
+    emu.regs.i += 1
 
 def get_opcode(word):
   prefix = (word & 0xf000) >> 12
