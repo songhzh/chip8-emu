@@ -1,10 +1,10 @@
 class Registers:
   def __init__(self):
-    self._data = [0] * 0xf
+    self._data = bytearray(16)
 
     self._i = 0
 
-    self._pc = 0
+    self._pc = 0x200
     self._sp = 0
 
     self._dt = 0
