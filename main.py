@@ -3,7 +3,7 @@ import random
 import argparse
 from pathlib import Path
 import pygame
-from emulator import Emulator
+from wrapper import GameWrapper
 
 if __name__ == '__main__':
   random.seed()
@@ -22,29 +22,13 @@ if __name__ == '__main__':
   sfx = pygame.mixer.Sound('sfx/blip.wav')
   clock = pygame.time.Clock()
 
-  emu = Emulator(rom.file_path)
+  game = GameWrapper(rom.file_path, pixels, sfx)
 
-  done = False
-  paused = False
+  while not game.done:
+    game.handleEvents()
+    game.step()
 
-  while not done:
-    pressed = pygame.key.get_pressed()
-
-    for evt in pygame.event.get():
-      if evt.type == pygame.QUIT:
-        done = True
-      if evt.type == pygame.KEYDOWN:
-        if evt.key == pygame.K_ESCAPE:
-          paused = not paused
-        if evt.key == pygame.K_BACKSPACE:
-          emu.reset()
-
-    if not paused:
-      emu.handleCycle(sfx)
-      emu.handleDraw(pixels)
-      emu.handleKeys(pressed)
-      
-      screen.blit(pygame.transform.scale(pixels, screen.get_rect().size), (0, 0))
-      pygame.display.flip()
+    screen.blit(pygame.transform.scale(pixels, screen.get_rect().size), (0, 0))
+    pygame.display.flip()
 
     clock.tick(500)

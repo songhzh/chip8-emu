@@ -3,3 +3,4 @@ class Flags:
     self.draw = False
     self.wait = False
     self.vx = None
+    self.sfx = False

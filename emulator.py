@@ -22,25 +22,6 @@ fontset = [
   0xf0, 0x80, 0xf0, 0x80, 0x80  # F
 ]
 
-keys = [
-  pygame.K_x, # 0
-  pygame.K_1, # 1
-  pygame.K_2, # 2
-  pygame.K_3, # 3
-  pygame.K_q, # 4
-  pygame.K_w, # 5
-  pygame.K_e, # 6
-  pygame.K_a, # 7
-  pygame.K_s, # 8
-  pygame.K_d, # 9
-  pygame.K_z, # A
-  pygame.K_c, # B
-  pygame.K_4, # C
-  pygame.K_r, # D
-  pygame.K_f, # E
-  pygame.K_v  # F
-]
-
 class Emulator:
   def __init__(self, file):
     self.file = file
@@ -77,7 +58,7 @@ class Emulator:
     self.regs.pc += 1
     return (lo << 8) | hi
 
-  def handleCycle(self, sfx):
+  def stepInstruction(self):
     if self.flags.wait:
       return
 
@@ -85,32 +66,27 @@ class Emulator:
     execute = decode(opcode)
     execute(self, opcode)
 
+  def stepTimers(self):
     if self.regs.dt > 0:
       self.regs.dt -= 1
     if self.regs.st > 0:
       self.regs.st -= 1
-      if self.regs.st == 0:
-        sfx.play()
+      self.flags.sfx = self.regs.st == 0
 
-  def handleDraw(self, pixels):
-    if not self.flags.draw:
-      return
+  def sfxFlag(self):
+    flag = self.flags.sfx
+    self.flags.sfx = False
+    return flag
 
-    pixels.fill((0, 0, 0))
-
-    for y in  range(32):
-      for x in range(64):
-        if self.gfx[y*64+x]:
-          pixels.set_at((x, y), (255, 255, 255))
-
+  def drawFlag(self):
+    flag = self.flags.draw
     self.flags.draw = False
-  
-  def handleKeys(self, pressed):
-    self.keys = [False] * 16
-
-    for i, k in enumerate(keys):
-      if pressed[k]:
-        self.keys[i] = True
-        if self.flags.wait:
-          self.regs[self.flags.vx] = i
-          self.flags.wait = False
+    return flag
+    
+  def updateKeys(self, pressed):
+    for i, k in enumerate(pressed):
+      if k and self.flags.wait:
+        self.regs[self.flags.vx] = i
+        self.flags.wait = False
+        break
+    self.keys = pressed
