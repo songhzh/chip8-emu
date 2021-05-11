@@ -112,12 +112,11 @@ def _8XY5(emu, word):
   emu.regs[vx] -= emu.regs[vy]
 
 def _8XY6(emu, word):
-  # vx = vy >> 1, vf = LSB
+  # vx = vx >> 1, vf = LSB
   vx = read(word, 0x0f00)
-  vy = read(word, 0x00f0)
   lsb = emu.regs[vx] & 1
   emu.regs[0xf] = lsb
-  emu.regs[vx] = emu.regs[vy] >> 1
+  emu.regs[vx] >>= 1
 
 def _8XY7(emu, word):
   # vx = vy - vx, vf = NOT BORROW
@@ -128,12 +127,11 @@ def _8XY7(emu, word):
   emu.regs[vx] = emu.regs[vy] - emu.regs[vx]
 
 def _8XYE(emu, word):
-  # vx = vy << 1, vf = MSB
+  # vx = vx << 1, vf = MSB
   vx = read(word, 0x0f00)
-  vy = read(word, 0x00f0)
-  msb = emu.regs[vx] & 0x8000
+  msb = 1 if emu.regs[vx] & 0x80 else 0
   emu.regs[0xf] = msb
-  emu.regs[vx] = emu.regs[vy] << 1
+  emu.regs[vx] <<= 1
 
 def _9XY0(emu, word):
   # skip if vx != vy
@@ -165,6 +163,7 @@ def _DXYN(emu, word):
   n = read(word, 0x000f)
   x = emu.regs[vx]
   y = emu.regs[vy]
+  emu.regs[0xf] = 0
   for i in range(n):
     line = emu.mem[emu.regs.i+i]
     for j in range(8):
@@ -172,7 +171,7 @@ def _DXYN(emu, word):
       x_coord = (x + j) % 64
       y_coord = (y + i) % 32
       g = y_coord * 64 + x_coord
-      if emu.gfx[g] ^ px:
+      if emu.gfx[g] and px:
         emu.regs[0xf] = 1
       emu.gfx[g] ^= px
   emu.flags.draw = True
@@ -231,15 +230,13 @@ def _FX55(emu, word):
   # store v0 to vx inclusive starting at i
   vx = read(word, 0x0f00)
   for r in range(vx+1):
-    emu.mem[emu.regs.i] = emu.regs[r]
-    emu.regs.i += 1
+    emu.mem[emu.regs.i+r] = emu.regs[r]
 
 def _FX65(emu, word):
   # read v0 to vx inclusive starting at i
   vx = read(word, 0x0f00)
   for r in range(vx+1):
-    emu.regs[r] = emu.mem[emu.regs.i]
-    emu.regs.i += 1
+    emu.regs[r] = emu.mem[emu.regs.i+r]
 
 def decode(word):
   prefix = (word & 0xf000) >> 12

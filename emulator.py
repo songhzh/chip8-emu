@@ -22,6 +22,25 @@ fontset = [
   0xf0, 0x80, 0xf0, 0x80, 0x80  # F
 ]
 
+keys = [
+  pygame.K_x, # 0
+  pygame.K_1, # 1
+  pygame.K_2, # 2
+  pygame.K_3, # 3
+  pygame.K_q, # 4
+  pygame.K_w, # 5
+  pygame.K_e, # 6
+  pygame.K_a, # 7
+  pygame.K_s, # 8
+  pygame.K_d, # 9
+  pygame.K_z, # A
+  pygame.K_c, # B
+  pygame.K_4, # C
+  pygame.K_r, # D
+  pygame.K_f, # E
+  pygame.K_v  # F
+]
+
 class Emulator:
   def __init__(self):
     self.regs = Registers()
@@ -53,30 +72,38 @@ class Emulator:
     self.regs.pc += 1
     return (lo << 8) | hi
 
-  def handleCycle(self):
+  def handleCycle(self, sfx):
     if self.flags.wait:
       return
 
     opcode = self.fetch()
     execute = decode(opcode)
-    # print(execute.__name__)
     execute(self, opcode)
 
-    self.regs.dt -= 1
-    self.regs.st -= 1
+    if self.regs.dt > 0:
+      self.regs.dt -= 1
+    if self.regs.st > 0:
+      self.regs.st -= 1
+      if self.regs.st == 0:
+        sfx.play()
 
-  def handleDraw(self, screen):
+  def handleDraw(self, pixels):
     if not self.flags.draw:
       return
 
-    screen.fill((0, 0, 0))
+    pixels.fill((0, 0, 0))
 
     for y in  range(32):
       for x in range(64):
         if self.gfx[y*64+x]:
-          screen.set_at((x, y), (255, 255, 255))
+          pixels.set_at((x, y), (255, 255, 255))
 
     self.flags.draw = False
   
-  def handleKeys(self):
-    self.flags.wait = False
+  def handleKeys(self, pressed):
+    self.keys = [False] * 16
+
+    for i, k in enumerate(keys):
+      if pressed[k]:
+        self.keys[i] = True
+        self.flags.wait = False
