@@ -111,4 +111,6 @@ class Emulator:
     for i, k in enumerate(keys):
       if pressed[k]:
         self.keys[i] = True
-        self.flags.wait = False
+        if self.flags.wait:
+          self.regs[self.flags.vx] = i
+          self.flags.wait = False

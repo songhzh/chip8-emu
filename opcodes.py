@@ -195,7 +195,9 @@ def _FX07(emu, word):
 
 def _FX0A(emu, word):
   # wait for keypress and store in vx
+  vx = read(word, 0x0f00)
   emu.flags.wait = True
+  emu.flags.vx = vx
 
 def _FX15(emu, word):
   # dt = vx
