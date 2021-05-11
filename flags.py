@@ -4,3 +4,4 @@ class Flags:
     self.wait = False
     self.vx = None
     self.sfx = False
+    self.timer = 0

@@ -240,83 +240,75 @@ def _FX65(emu, word):
   for r in range(vx+1):
     emu.regs[r] = emu.mem[emu.regs.i+r]
 
+opcodes = [
+  lambda word: decode_0(word),
+  lambda _: _1NNN,
+  lambda _: _2NNN,
+  lambda _: _3XNN,
+  lambda _: _4XNN,
+  lambda _: _5XY0,
+  lambda _: _6XNN,
+  lambda _: _7XNN,
+  lambda word: decode_8(word),
+  lambda _: _9XY0,
+  lambda _: _ANNN,
+  lambda _: _BNNN,
+  lambda _: _CXNN,
+  lambda _: _DXYN,
+  lambda word: decode_e(word),
+  lambda word: decode_f(word),
+]
+
+opcodes_0 = {
+  0x0e0: _00E0,
+  0x0ee: _00EE
+}
+
+opcodes_8 = {
+  0x0: _8XY0,
+  0x1: _8XY1,
+  0x2: _8XY2,
+  0x3: _8XY3,
+  0x4: _8XY4,
+  0x5: _8XY5,
+  0x6: _8XY6,
+  0x7: _8XY7,
+  0xe: _8XYE
+}
+
+opcodes_e = {
+  0x9e: _EX9E,
+  0xa1: _EXA1
+}
+
+opcodes_f = {
+  0x07: _FX07,
+  0x0A: _FX0A,
+  0x15: _FX15,
+  0x18: _FX18,
+  0x1E: _FX1E,
+  0x29: _FX29,
+  0x33: _FX33,
+  0x55: _FX55,
+  0x65: _FX65
+}
+
 def decode(word):
   prefix = (word & 0xf000) >> 12
-  if prefix == 0x0:
-    suffix = word & 0xfff
-    if suffix == 0x0e0:
-      return _00E0
-    if suffix == 0x0ee:
-      return _00EE
-    return _0NNN
-  if prefix == 0x1:
-    return _1NNN
-  if prefix == 0x2:
-    return _2NNN
-  if prefix == 0x3:
-    return _3XNN
-  if prefix == 0x4:
-    return _4XNN
-  if prefix == 0x5:
-    return _5XY0
-  if prefix == 0x6:
-    return _6XNN
-  if prefix == 0x7:
-    return _7XNN
-  if prefix == 0x8:
-    suffix = word & 0xf
-    if suffix == 0x0:
-      return _8XY0
-    if suffix == 0x1:
-      return _8XY1
-    if suffix == 0x2:
-      return _8XY2
-    if suffix == 0x3:
-      return _8XY3
-    if suffix == 0x4:
-      return _8XY4
-    if suffix == 0x5:
-      return _8XY5
-    if suffix == 0x6:
-      return _8XY6
-    if suffix == 0x7:
-      return _8XY7
-    if suffix == 0xe:
-      return _8XYE
-  if prefix == 0x9:
-    return _9XY0
-  if prefix == 0xa:
-    return _ANNN
-  if prefix == 0xb:
-    return _BNNN
-  if prefix == 0xc:
-    return _CXNN
-  if prefix == 0xd:
-    return _DXYN
-  if prefix == 0xe:
-    suffix = word & 0xff
-    if suffix == 0x9e:
-      return _EX9E
-    if suffix == 0xa1:
-      return _EXA1
-  if prefix == 0xf:
-    suffix = word & 0xff
-    if suffix == 0x07:
-      return _FX07
-    if suffix == 0x0a:
-      return _FX0A
-    if suffix == 0x15:
-      return _FX15
-    if suffix == 0x18:
-      return _FX18
-    if suffix == 0x1e:
-      return _FX1E
-    if suffix == 0x29:
-      return _FX29
-    if suffix == 0x33:
-      return _FX33
-    if suffix == 0x55:
-      return _FX55
-    if suffix == 0x65:
-      return _FX65
-  raise ValueError('Invalid opcode', word)
+  return opcodes[prefix](word)
+
+def decode_0(word):
+  suffix = word & 0xfff
+  return opcodes_0.get(suffix, _0NNN)
+
+def decode_8(word):
+  suffix = word & 0xf
+  return opcodes_8.get(suffix)
+
+def decode_e(word):
+  suffix = word & 0xff
+  return opcodes_e.get(suffix)
+
+def decode_f(word):
+  suffix = word & 0xff
+  return opcodes_f.get(suffix)

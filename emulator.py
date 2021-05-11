@@ -67,11 +67,17 @@ class Emulator:
     execute(self, opcode)
 
   def stepTimers(self):
+    if self.flags.timer > 0:
+      self.flags.timer -= 1
+      return
+
     if self.regs.dt > 0:
       self.regs.dt -= 1
     if self.regs.st > 0:
       self.regs.st -= 1
       self.flags.sfx = self.regs.st == 0
+    
+    self.flags.timer = 8 # approximate 60 Hz
 
   def sfxFlag(self):
     flag = self.flags.sfx
