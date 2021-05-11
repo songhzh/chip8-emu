@@ -42,7 +42,11 @@ keys = [
 ]
 
 class Emulator:
-  def __init__(self):
+  def __init__(self, file):
+    self.file = file
+    self.reset()
+
+  def reset(self):
     self.regs = Registers()
     self.flags = Flags()
     self.stack = [0] * 16
@@ -51,13 +55,14 @@ class Emulator:
     self.keys = [False] * 16
 
     self.load_fontset()
+    self.load_rom()
 
   def load_fontset(self):
     for i in range(80):
       self.mem[0x50+i] = fontset[i]
 
-  def load_rom(self, file):
-    with open(file, 'rb') as f:
+  def load_rom(self):
+    with open(self.file, 'rb') as f:
       i = 0
       byte = f.read(1)
       while byte != b'':

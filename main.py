@@ -22,11 +22,10 @@ if __name__ == '__main__':
   sfx = pygame.mixer.Sound('sfx/blip.wav')
   clock = pygame.time.Clock()
 
-  emu = Emulator()
-  emu.load_rom(rom.file_path)
-  # emu.load_rom('roms/breakout.ch8')
+  emu = Emulator(rom.file_path)
 
   done = False
+  paused = False
 
   while not done:
     pressed = pygame.key.get_pressed()
@@ -34,11 +33,18 @@ if __name__ == '__main__':
     for evt in pygame.event.get():
       if evt.type == pygame.QUIT:
         done = True
-    
-    emu.handleCycle(sfx)
-    emu.handleDraw(pixels)
-    emu.handleKeys(pressed)
-    
-    screen.blit(pygame.transform.scale(pixels, screen.get_rect().size), (0, 0))
-    pygame.display.flip()
+      if evt.type == pygame.KEYDOWN:
+        if evt.key == pygame.K_ESCAPE:
+          paused = not paused
+        if evt.key == pygame.K_BACKSPACE:
+          emu.reset()
+
+    if not paused:
+      emu.handleCycle(sfx)
+      emu.handleDraw(pixels)
+      emu.handleKeys(pressed)
+      
+      screen.blit(pygame.transform.scale(pixels, screen.get_rect().size), (0, 0))
+      pygame.display.flip()
+
     clock.tick(500)
